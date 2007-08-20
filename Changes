@@ -1,9 +1,18 @@
 Revision history for Lingua-EN-Titlecase
 
+0.03 Mon Aug 20 14:46:17 PDT 2007
+    - Changed the "apostrophe" to a single [[:punct:]]. This alters
+      behavior quite a bit. Moo-ish and search.cpan.org are now one
+      word. They were two and three before. Mixed case matches
+      similarly differently too.
+    - I think to deal with stuff like "iPods on eBay!" the titlecase
+      method, and general handling, will have to be token-based. It
+      gets too messy, too quickly otherwise.
+
 0.02 Mon Aug 20 01:12:17 PDT 2007
-     - Finding fault so quick: POD example updated with correct output.
+    - Finding fault so quick: POD example updated with correct output.
 
 0.01 Sun Aug 19 23:36:33 PDT 2007
-     - Initial release. Champagne for everyone but the dogs! Sparkling
-       wine for the dogs!
+    - Initial release. Champagne for everyone but the dogs! Sparkling
+      wine for the dogs!
 

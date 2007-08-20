@@ -18,6 +18,7 @@ use overload '""' => sub { $_[0]->original ? $_[0]->titlecase : ref $_[0] },
 # confidence
 # titlecase, tc
 # rules
+# allow user to set order of applying look-up rules, lc > uc, e.g.
 
 # NEED TO ALLOW FOR fixing or leaving things like pH, PERL, tied hash dictionary?
 
@@ -35,7 +36,7 @@ __PACKAGE__->mk_accessors qw( lc all_cap_threshold
                               mixed_case_threshold dictionary );
 
 use Carp;
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 
 our %LC = map { $_ => 1 }
     qw( the a an and or but aboard about above across after against
@@ -47,7 +48,7 @@ our %LC = map { $_ => 1 }
         v vs
         );
 
-my $Apostrophe = qr/'/; #' This is very naive
+my $Apostrophe = qr/[[:punct:]]/; #' This is very naive
 
 my %Parse =
     (
@@ -138,7 +139,6 @@ sub title : method {
     return $self->titlecase() if defined wantarray;
 }
 
-
 sub titlecase : method {
     my ( $self ) = @_;
     return $self->{_titlecase} if $self->{_titlecase};
@@ -151,7 +151,7 @@ sub titlecase : method {
     my $mixed_ratio = $self->mixedcase / $length;
     if ( $uc_ratio > $self->uc_threshold # too much uppercase to be real
          or
-         $mixed_ratio > $self->mixed_threshold )
+         $mixed_ratio > $self->mixed_threshold ) # too mixed to be real
     {
         $title = lc $title;
     }
@@ -203,7 +203,7 @@ Lingua::EN::Titlecase - Titlecasing of English words by traditional editorial ru
 
 =head1 VERSION
 
-0.02
+0.03
 
 =head1 CAVEAT
 
@@ -250,6 +250,10 @@ editorial rules or cases like--
 =item abbreviations -- USA
 
 =item mixedcase and proper names -- eBay: nEw KEyBOArD
+
+NB: cases like iPod and eBay do not currently work properly and don't
+yet have a hook to manually correct this. They will have both in
+future versions.
 
 =item all caps -- SHOUT ME DOWN
 
@@ -301,9 +305,8 @@ the constructor or the method C<title>.
 
 =head2 STRATEGIES
 
-One of the hardest parts of properly titlecasing input is just not
-knowing if part of it is already correct and should not be clobbered.
-E.g.--
+One of the hardest parts of properly titlecasing input is knowing if
+part of it is already correct and should not be clobbered. E.g.--
 
  Old MacDonald had a farm
 

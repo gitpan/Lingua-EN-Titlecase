@@ -130,5 +130,10 @@ US vs CCCP
 
 cold-Cocked the guy with my black-jack
 Cold-Cocked the Guy with My Black-jack
-8
+6
+"C"
+
+triple-threat-hypen and int'l'z'n
+Triple-threat-hypen and Int'l'z'n
+5
 ""
