@@ -35,7 +35,7 @@ __PACKAGE__->mk_accessors qw( lc all_cap_threshold
                               mixed_case_threshold dictionary );
 
 use Carp;
-our $VERSION = '0.01';
+our $VERSION = "0.02";
 
 our %LC = map { $_ => 1 }
     qw( the a an and or but aboard about above across after against
@@ -203,7 +203,7 @@ Lingua::EN::Titlecase - Titlecasing of English words by traditional editorial ru
 
 =head1 VERSION
 
-0.01
+0.02
 
 =head1 CAVEAT
 
@@ -313,8 +313,7 @@ Lowercasing the whole string and then title casing would yield--
   Old Macdonald Had a Farm
 
 So, to determine when to flatten a title to lowercase before
-processing, we check the ratio of mixedcase and the ratio of all
-caps.
+processing, we check the ratio of mixedcase and the ratio of caps.
 
 =over 4
 
@@ -328,7 +327,7 @@ clobber is .30.
 
 =item $tc->uc_threshold
 
-Same as mixed but for "all caps." Default threshold is .90.
+Same as mixed but for "all" caps. Default threshold is .90.
 
  # example
 
@@ -345,7 +344,7 @@ initial caps are not counted. List context returns the letters. E.g.--
 
 Yields--
 
- 13, H T R O B A B W L E C Y D
+ 11, H T R O B A B E C Y D
 
 This is useful for determining if a string is overly mixed. Substrings
 like "pH" crop up now and then but they should never compose a high
