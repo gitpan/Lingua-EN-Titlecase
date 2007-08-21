@@ -36,7 +36,7 @@ __PACKAGE__->mk_accessors qw(
 
 use List::Util qw(first);
 use Carp;
-our $VERSION = "0.04";
+our $VERSION = "0.05";
 
 our %LC = map { $_ => 1 }
     qw( the a an and or but aboard about above across after against
@@ -270,7 +270,7 @@ Lingua::EN::Titlecase - Titlecasing of English words by traditional editorial ru
 
 =head1 VERSION
 
-0.04
+0.05
 
 =head1 CAVEAT
 

@@ -1,5 +1,9 @@
 Revision history for Lingua-EN-Titlecase
 
+0.05 Tue Aug 21 10:11:56 PDT 2007
+    - Took out Perl::Critic test file. It was causing failures in the
+      CPAN tests even though it should skip if it's not installed.
+
 0.04 Mon Aug 20 22:52:00 PDT 2007
     - Totally changed the guts. Now a lexer queue drives it instead of
       a single pass set of regexes. Looks a little spaghetti-ish but I
