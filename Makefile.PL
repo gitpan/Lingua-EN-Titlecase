@@ -9,7 +9,9 @@ WriteMakefile(
     ABSTRACT_FROM       => 'lib/Lingua/EN/Titlecase.pm',
     PL_FILES            => {},
     PREREQ_PM => {
-        'Test::More' => 0,
+        "Test::More" => 0,
+        "Carp"       => 0,
+        "List::Util" => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Lingua-EN-Titlecase-*' },

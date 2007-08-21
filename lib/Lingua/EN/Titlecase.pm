@@ -28,15 +28,15 @@ use overload '""' => sub { $_[0]->original ? $_[0]->titlecase : ref $_[0] },
 # There are quite a few apostrophe edge cases right now and no
 # utf8/entity handling
 
-__PACKAGE__->mk_accessors qw( lc all_cap_threshold
+__PACKAGE__->mk_accessors qw( 
                               uc_threshold
                               mixed_threshold
-                              original
-                              words
-                              mixed_case_threshold dictionary );
+                              allow_mixed
+                              );
 
+use List::Util qw(first);
 use Carp;
-our $VERSION = "0.03";
+our $VERSION = "0.04";
 
 our %LC = map { $_ => 1 }
     qw( the a an and or but aboard about above across after against
@@ -48,33 +48,37 @@ our %LC = map { $_ => 1 }
         v vs
         );
 
+my %Attr = (
+            original => 1,
+            title => 1,
+            uc_threshold => 1,
+            mixed_threshold => 1,
+            );
+
 my $Apostrophe = qr/[[:punct:]]/; #' This is very naive
 
-my %Parse =
-    (
-     mixedcase => qr/(?<=[[:lower:]])[[:upper:]]
+my $Mixed =qr/(?<=[[:lower:]])[[:upper:]]
                     |
-                     (?<=\s)[[:upper:]](?=[[:upper:]]+[[:lower:]])
+                     (?<=\A)[[:upper:]](?=[[:upper:]]+[[:lower:]])
                     |
-                     (?<=\s)[[:upper:]](?=[[:lower:]]+[[:upper:]])
+                     (?<=\A)[[:upper:]](?=[[:lower:]]+[[:upper:]])
                     |
                      (?<=[[:lower:]]$Apostrophe)[[:upper:]]
                     |
                      \G(?<!\A)[[:upper:]]
-                    /x,
-     uppercase => qr/[[:upper:]]/,
-     lowercase => qr/[[:lower:]]/,
-     whitespace => qr/\s+/,
-     wc => qr/[[:alpha:]]+$Apostrophe[[:alpha:]]+|[[:alpha:]]+/,
-     );
+             /x;
 
-# not used yet
-our %Cases =
-    (
-     proper => undef,
-     default_uc => undef,
-     default_lc => undef, # see the %LC
-    );
+my $Wordish = qr/
+            [[:alpha:]]
+            (?: (?<=[[:alpha:]])[[:punct:]](?=[[:alpha:]]) | [[:alpha:]] )*
+            [[:alpha:]]*
+                       /x;
+
+my $Lexer = sub {
+            $_[0] =~ s/\A($Wordish)// and return [ "word", "$1" ];
+            $_[0] =~ s/\A(.)//s and return [ undef, "$1" ];
+            return ();
+        };
 
 sub new : method {
     my $self = +shift->SUPER::new();
@@ -89,13 +93,25 @@ sub new : method {
         for my $key ( keys %args )
         {
             croak "Construction parameter \"$key\" not allowed"
-                unless $Parse{$key};
+                unless $Attr{$key};
             $self->$key($args{$key});
         }
     }
-    $self->mixed_threshold(.3) unless $self->mixed_threshold;
-    $self->uc_threshold(.9) unless $self->uc_threshold;
+    $self->_init();
     $self;
+}
+
+sub _init : method {
+    my ( $self ) = @_;
+    $self->{_titlecase} = '';
+    $self->{_real_length} = 0;
+    $self->{_mixedcase} = [];
+    $self->{_wc} = [];
+    $self->{_token_queue} = [];
+    $self->{_uppercase} = [];
+    $self->allow_mixed(undef);
+    $self->mixed_threshold(0.25) unless $self->mixed_threshold;
+    $self->uc_threshold(0.90) unless $self->uc_threshold;
 }
 
 sub mixedcase : method {
@@ -133,47 +149,98 @@ sub title : method {
 
     if ( $newstring )
     {
-        $self->original($newstring);
+        $self->{_original} = $newstring;
+        $self->_init();
         $self->_parse();
     }
     return $self->titlecase() if defined wantarray;
 }
 
-sub titlecase : method {
+sub original : method {
     my ( $self ) = @_;
-    return $self->{_titlecase} if $self->{_titlecase};
-
-    my $title = $self->original
-        or croak "No original string set for titlecasing"; # wc better?
-
-    my $length = length($title) - $self->whitespace;
-    my $uc_ratio = $self->uppercase / $length;
-    my $mixed_ratio = $self->mixedcase / $length;
-    if ( $uc_ratio > $self->uc_threshold # too much uppercase to be real
-         or
-         $mixed_ratio > $self->mixed_threshold ) # too mixed to be real
-    {
-        $title = lc $title;
-    }
-    $title =~ s/(\b(?<!\w[[:punct:]])\w+)/$LC{lc($1)} ? lc($1) : ucfirst($1)/eg;
-    $title =~ s/(\A\w)/\U$1/g;
-    $self->{_titlecase} = $title;
-    $title;
+    return $self->{_original};
 }
 
 sub _parse : method {
     my ( $self ) = @_;
-    $self->{_titlecase} = '';
+    $self->_init();
+    my $string = $self->original();
+    $self->{_uppercase} = [ $string =~ /[[:upper:]]/g ];
+    # TOKEN ARRAYS
+    # 0 - type: word|null
+    # 1 - content
+    # 2 - mixed array
+    # 3 - uc array
+    # 4 - first word token in queue
+    while ( my $token = $Lexer->($string) )
     {
-        local $_ = $self->original;
-        for my $name ( keys %Parse )
-        {
-            $self->{"_$name"} = [];
-            @{$self->{"_$name"}} = /$Parse{$name}/g;
-        }
+        my @mixed = $token->[1] =~ /$Mixed/g;
+        $token->[2] = @mixed ? \@mixed : undef;
+        push @{$self->{_mixedcase}}, @mixed if @mixed;
+        push @{$self->{_token_queue}}, $token;
+        push @{$self->{_wc}}, $token->[1] if $token->[0];
+        $self->{_real_length} += length($token->[1]) if $token->[0];
+    }
+    my $uc_ratio = $self->uppercase / $self->{_real_length};
+    my $mixed_ratio = $self->mixedcase / $self->{_real_length};
+    if ( $uc_ratio > $self->uc_threshold ) # too much uppercase to be real
+    {
+        $_->[1] = lc($_->[1]) for @{ $self->{_token_queue} };
+#        carp "Original exceeds uppercase threshold (" .
+#            $self->uc_threshold .
+#            ") lower casing for pre-processing";
+    }
+    elsif ( $mixed_ratio > $self->mixed_threshold ) # too mixed to be real
+    {
+        $_->[1] = lc($_->[1]) for @{ $self->{_token_queue} };
+#        carp "Original exceeds mixedcase threshold, lower casing for pre-processing";
+    }
+    else
+    {
+        $self->allow_mixed(1);
     }
     1;
 }
+
+sub titlecase : method {
+    my ( $self ) = @_;
+    # it's up to _parse to clear it
+    return $self->{_titlecase} if $self->{_titlecase};
+
+    # first word token
+    my $fwt = first { $_->[0] } @{$self->{_token_queue} };
+    $fwt->[4] = 1;
+
+    for my $t ( @{ $self->{_token_queue} } )
+    {
+        if ( $t->[0] )
+        {
+            if ( $t->[2] and $self->allow_mixed )
+            {
+                $self->{_titlecase} .= $t->[1];
+            }
+            elsif ( $t->[4] ) # the initial word token
+            {
+                $self->{_titlecase} .= ucfirst $t->[1];
+            }
+            elsif ( $LC{lc($t->[1])} ) # lc/uc checks here
+            {
+                $self->{_titlecase} .= lc $t->[1];
+            }
+            else
+            {
+                $self->{_titlecase} .= ucfirst $t->[1];
+            }
+        }
+        else # not a word token
+        {
+            $self->{_titlecase} .= $t->[1];
+        }
+    }
+    return $self->{_titlecase};
+}
+
+
 
 1;
 
@@ -203,7 +270,7 @@ Lingua::EN::Titlecase - Titlecasing of English words by traditional editorial ru
 
 =head1 VERSION
 
-0.03
+0.04
 
 =head1 CAVEAT
 
@@ -250,10 +317,6 @@ editorial rules or cases like--
 =item abbreviations -- USA
 
 =item mixedcase and proper names -- eBay: nEw KEyBOArD
-
-NB: cases like iPod and eBay do not currently work properly and don't
-yet have a hook to manually correct this. They will have both in
-future versions.
 
 =item all caps -- SHOUT ME DOWN
 
@@ -324,15 +387,17 @@ processing, we check the ratio of mixedcase and the ratio of caps.
 
 Set/get. The ratio of mixedcase to letters which triggers lowercasing
 the whole string before trying to titlecase. The built-in threshold to
-clobber is .30.
+clobber is 0.25. Example breakpoints.
 
- # example
+ 0.09 --> Old Macdonald Had a Farm
+ 0.10 --> Old MacDonald Had a Farm
+
+ 0.14 --> An Ipod with Low Ph on Ebay
+ 0.15 --> An iPod with Low pH on eBay
 
 =item $tc->uc_threshold
 
-Same as mixed but for "all" caps. Default threshold is .90.
-
- # example
+Same as mixed but for "all" caps. Default threshold is 0.95.
 
 =item $tc->mixed_case
 
@@ -393,6 +458,8 @@ applied.
 
 Handle hypens; user hooks.
 
+Debug ability. Log object or to carp?
+
 Smart apostrophe, utf8, entities?
 
 Recipes. Including TT2 "plugin" recipe.
@@ -409,8 +476,6 @@ Mini-scripts to test strings or accomplish custom configuration goals.
 
 =head1 CONFIGURATION AND ENVIRONMENT
 
-...321
-  
 Lingua::EN::Titlecase requires no configuration files or environment variables.
 
 =head1 DEPENDENCIES
@@ -423,7 +488,7 @@ None reported.
 
 =head1 BUGS AND LIMITATIONS
 
-This is alpha-software. No bugs have been reported.
+This is beta-ish software. No bugs have been reported.
 
 Please report any bugs or feature requests to
 C<bug-lingua-en-titlecase@rt.cpan.org>, or through the web interface at

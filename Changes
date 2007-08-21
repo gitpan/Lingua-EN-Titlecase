@@ -1,5 +1,23 @@
 Revision history for Lingua-EN-Titlecase
 
+0.04 Mon Aug 20 22:52:00 PDT 2007
+    - Totally changed the guts. Now a lexer queue drives it instead of
+      a single pass set of regexes. Looks a little spaghetti-ish but I
+      think it'll clean up nice and allow for a lot of easy add-ons
+      like dictionary hooks.
+    - Added List::Util to get "first" token in queue which is wordish
+      without a placeholding switch.
+    - Cleaned up wordish/wc regex.
+    - Mixed case terms with leading lowercase are now correctly
+      preserved if they are below the built-in or user-set threshold.
+    - Raised uppercase threshold from 0.9 to 0.95.
+    - Lowered mixedcase threshold from 0.3 to 0.25 based on some test
+      strings which show a pretty good breakpoint around 0.15.
+    - Removed unused accessors.
+    - A few small logic improvements in places like counting the real
+      length of the string for computing mixedcase and uppercase
+      ratios.
+
 0.03 Mon Aug 20 14:46:17 PDT 2007
     - Changed the "apostrophe" to a single [[:punct:]]. This alters
       behavior quite a bit. Moo-ish and search.cpan.org are now one
@@ -15,4 +33,3 @@ Revision history for Lingua-EN-Titlecase
 0.01 Sun Aug 19 23:36:33 PDT 2007
     - Initial release. Champagne for everyone but the dogs! Sparkling
       wine for the dogs!
-

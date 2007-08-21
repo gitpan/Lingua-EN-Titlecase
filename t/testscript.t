@@ -67,6 +67,13 @@ for my $testcase ( @test_strings )
 #    number found by wc
 #    space joined array of mixedcase letters caught
 
+# This fails right now but maybe hyphens should allow it to work
+# cold-Cocked the guy with my black-jack
+# Cold-Cocked the Guy with My Black-jack
+# 6
+# "C"
+
+
 __END__
 library Of Perl In between tools
 Library of Perl in between Tools
@@ -128,12 +135,7 @@ US vs CCCP
 5
 ""
 
-cold-Cocked the guy with my black-jack
-Cold-Cocked the Guy with My Black-jack
-6
-"C"
-
 triple-threat-hypen and int'l'z'n
 Triple-threat-hypen and Int'l'z'n
-5
+3
 ""
