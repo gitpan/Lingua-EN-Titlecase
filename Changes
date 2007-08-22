@@ -1,5 +1,18 @@
 Revision history for Lingua-EN-Titlecase
 
+0.06
+    - Changed "alpha" reference to beta-ish.
+    - Quote tweak to this file in 0.03's entry.
+    - Added Class::Accessor::Fast to Makefile.PL PREREQ_PM.
+    - Took out some silly and redundant wantarray checks.
+    - Expanded POD.
+    - Removed uppercase() and lowercase(). Second was broken and
+      neither seem to belong anyway.
+    - Tweaked a couple test cases.
+    - Rearranged guts again to take rxes out of top package namespace
+      and put them into the object. Can be spiffier but that can wait.
+    - User can now set word_punctuation to differ from default [:punct:].
+
 0.05 Tue Aug 21 10:11:56 PDT 2007
     - Took out Perl::Critic test file. It was causing failures in the
       CPAN tests even though it should skip if it's not installed.
@@ -24,8 +37,8 @@ Revision history for Lingua-EN-Titlecase
 
 0.03 Mon Aug 20 14:46:17 PDT 2007
     - Changed the "apostrophe" to a single [[:punct:]]. This alters
-      behavior quite a bit. Moo-ish and search.cpan.org are now one
-      word. They were two and three before. Mixed case matches
+      behavior quite a bit. "Moo-ish" and "search.cpan.org" are now
+      one word. They were two and three before. Mixed case matches
       similarly differently too.
     - I think to deal with stuff like "iPods on eBay!" the titlecase
       method, and general handling, will have to be token-based. It

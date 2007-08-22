@@ -120,13 +120,13 @@ Stop Shouting, Jackass
 3
 ""
 
-USA vs USSR
-USA vs USSR
-3
+the USA, the USSR with their six-guns to the sky
+The USA, the USSR with Their Six-guns to the Sky
+10
 ""
 
-US Vs CCCP
-US vs CCCP
+U.S. Vs. C.C.C.P.
+U.S. vs. C.C.C.P.
 3
 ""
 

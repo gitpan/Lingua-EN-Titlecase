@@ -4,6 +4,16 @@ use strict;
 use warnings;
 require 5.006; # for POSIX classes
 use base "Class::Accessor::Fast";
+__PACKAGE__->mk_accessors qw( 
+                              uc_threshold
+                              mixed_threshold
+                              allow_mixed
+                              word_punctuation
+                              _mixed_rx
+                              _word_rx
+                              _lexer
+                              );
+
 use overload '""' => sub { $_[0]->original ? $_[0]->titlecase : ref $_[0] },
     fallback => 1;
 
@@ -28,15 +38,9 @@ use overload '""' => sub { $_[0]->original ? $_[0]->titlecase : ref $_[0] },
 # There are quite a few apostrophe edge cases right now and no
 # utf8/entity handling
 
-__PACKAGE__->mk_accessors qw( 
-                              uc_threshold
-                              mixed_threshold
-                              allow_mixed
-                              );
-
 use List::Util qw(first);
 use Carp;
-our $VERSION = "0.05";
+our $VERSION = "0.06";
 
 our %LC = map { $_ => 1 }
     qw( the a an and or but aboard about above across after against
@@ -49,36 +53,12 @@ our %LC = map { $_ => 1 }
         );
 
 my %Attr = (
+            word_punctuation => 1,
             original => 1,
             title => 1,
             uc_threshold => 1,
             mixed_threshold => 1,
             );
-
-my $Apostrophe = qr/[[:punct:]]/; #' This is very naive
-
-my $Mixed =qr/(?<=[[:lower:]])[[:upper:]]
-                    |
-                     (?<=\A)[[:upper:]](?=[[:upper:]]+[[:lower:]])
-                    |
-                     (?<=\A)[[:upper:]](?=[[:lower:]]+[[:upper:]])
-                    |
-                     (?<=[[:lower:]]$Apostrophe)[[:upper:]]
-                    |
-                     \G(?<!\A)[[:upper:]]
-             /x;
-
-my $Wordish = qr/
-            [[:alpha:]]
-            (?: (?<=[[:alpha:]])[[:punct:]](?=[[:alpha:]]) | [[:alpha:]] )*
-            [[:alpha:]]*
-                       /x;
-
-my $Lexer = sub {
-            $_[0] =~ s/\A($Wordish)// and return [ "word", "$1" ];
-            $_[0] =~ s/\A(.)//s and return [ undef, "$1" ];
-            return ();
-        };
 
 sub new : method {
     my $self = +shift->SUPER::new();
@@ -112,36 +92,66 @@ sub _init : method {
     $self->allow_mixed(undef);
     $self->mixed_threshold(0.25) unless $self->mixed_threshold;
     $self->uc_threshold(0.90) unless $self->uc_threshold;
+
+    my $wp = $self->word_punctuation || qr/[[:punct:]]/;
+
+    my $mixed =qr/(?<=[[:lower:]])[[:upper:]]
+                    |
+                     (?<=\A)[[:upper:]](?=[[:upper:]]+[[:lower:]])
+                    |
+                     (?<=\A)[[:upper:]](?=[[:lower:]]+[[:upper:]])
+                    |
+                     (?<=[[:lower:]]$wp)[[:upper:]]
+                    |
+                     \G(?<!\A)[[:upper:]]
+             /x;
+
+    my $wordish = qr/
+            [[:alpha:]]
+            (?: (?<=[[:alpha:]]) $wp (?=[[:alpha:]]) | [[:alpha:]] )*
+            [[:alpha:]]*
+                       /x;
+
+    $self->_mixed_rx( $mixed );
+    $self->_word_rx( $wordish );
+    $self->_lexer(
+                  sub {
+                      $_[0] =~ s/\A($wordish)// and return [ "word", "$1" ];
+                      $_[0] =~ s/\A(.)//s and return [ undef, "$1" ];
+                      return ();
+                  }
+                  );
+    $self;
 }
 
 sub mixedcase : method {
     my ( $self ) = @_;
     $self->_parse unless $self->{_mixedcase};
-    wantarray ? @{$self->{_mixedcase}} : scalar @{$self->{_mixedcase}};
+    return @{$self->{_mixedcase}};
 }
 
 sub uppercase : method {
     my ( $self ) = @_;
     $self->_parse unless $self->{_uppercase};
-    wantarray ? @{$self->{_uppercase}} : scalar @{$self->{_uppercase}};
+    return @{$self->{_uppercase}};
 }
 
-sub lowercase : method {
-    my ( $self ) = @_;
-    $self->_parse unless $self->{_lowercase};
-    wantarray ? @{$self->{_lowercase}} : scalar @{$self->{_lowercase}};
-}
+#sub lowercase : method { # NOT BEING PARSED
+#    my ( $self ) = @_;
+#    $self->_parse unless $self->{_lowercase};
+#    return @{$self->{_lowercase}};
+#}
 
 sub whitespace : method {
     my ( $self ) = @_;
     $self->_parse unless $self->{_whitespace};
-    wantarray ? @{$self->{_whitespace}} : scalar @{$self->{_whitespace}};
+    return @{$self->{_whitespace}};
 }
 
 sub wc : method {
     my ( $self ) = @_;
     $self->_parse unless $self->{_wc};
-    wantarray ? @{$self->{_wc}} : scalar @{$self->{_wc}};
+    return @{$self->{_wc}};
 }
 
 sub title : method {
@@ -171,10 +181,13 @@ sub _parse : method {
     # 1 - content
     # 2 - mixed array
     # 3 - uc array
-    # 4 - first word token in queue
-    while ( my $token = $Lexer->($string) )
+    # 4 - first word token in queue -- "boolean" -- set in titlecase()
+
+    my $mixed_rx = $self->_mixed_rx;
+
+    while ( my $token = $self->_lexer->($string) )
     {
-        my @mixed = $token->[1] =~ /$Mixed/g;
+        my @mixed = $token->[1] =~ /$mixed_rx/g;
         $token->[2] = @mixed ? \@mixed : undef;
         push @{$self->{_mixedcase}}, @mixed if @mixed;
         push @{$self->{_token_queue}}, $token;
@@ -241,7 +254,6 @@ sub titlecase : method {
 }
 
 
-
 1;
 
 __END__
@@ -270,15 +282,13 @@ Lingua::EN::Titlecase - Titlecasing of English words by traditional editorial ru
 
 =head1 VERSION
 
-0.05
+0.06
 
 =head1 CAVEAT
 
-Alpha software. I'm very interested in feedback! All interfaces,
+Beta-ish software. I'm very interested in feedback! All interfaces,
 method names, and internal code subject to change or being roundfiled
 in the BackPan.
-
-Apologies for the current placeholders in this doc.
 
 =head1 SYNOPSIS
 
@@ -294,12 +304,16 @@ Apologies for the current placeholders in this doc.
 
 =head1 DESCRIPTION
 
-Titlecasing in standard English usage is the initial capitalization of
+Editorial titlecasing in English is the initial capitalization of
 regular words minus inner articles, prepositions, and conjunctions.
 
 This is one of those problems that is somewhat easy to solve for the
 general case but impossible to solve for all cases. Hence the lack of
-module till now.
+module till now. This module takes an optimistic approach, assuming
+that some words, unless there are clues to the contrary, are likely to
+be correct already. Most titlecase implementations, for example,
+convert everything to lowercase first. This is obviously flawed for
+many common cases like proper names and abbreviations.
 
 # allow for style/usage plugins...?
 
@@ -339,7 +353,8 @@ method.
 
  $tc->new("this is what should be titlecased");
 
- $tc->new(original => "no, this is");
+ $tc->new(original => "no, this is",
+          mixed_threshold => 0.5);
 
  $tc->title("i beg to differ");
 
@@ -363,6 +378,34 @@ done at once.
 
 Returns the titlecased string. Croaks if there is no original set via
 the constructor or the method C<title>.
+
+=item $tc->uppercase
+
+Returns the list of uppercase letters found. Includes those mixed case
+letters. Chiefly used internally for determining if string has
+exceeded the set threshold to be considered "all caps."
+
+=item $tc->word_punctuation(qr/['-]/)
+
+Sets the regex which will be used to allow punctuation inside words.
+The default is "[:punct:]." This is more reasonable that it might
+sound as word boundaries generally have either a space or more than
+one piece of punctuation. Any instance of the word_punctuation is
+allowed inside a "word" if it is surrounded by [:alpha:]s. E.g.,
+[:punct:] makes all these one "word" for titlecasing--
+
+ can't
+ cpan.org
+ cow-catcher
+ M!M
+
+Set on construction or reset it to change the behavior--
+
+ Lingua::EN::Titlecase->new(word_punctuation => "['-]");
+
+ $tc->word_punctuation(qr/['-]/)
+ # "can't" and "cow-cather" are still one word
+ # "cpan.org" is now two and the "Org" will get titlecased
 
 =back
 
@@ -423,17 +466,9 @@ percentage of a properly cased title.
 "Word" count. Scalar context returns count of "words." List returns
 them.
 
-=item $tc->lowercase
-
-Count/list of lowercase letters found.
-
 =item $tc->mixedcase
 
 Count/list of mixedcase letters found.
-
-=item $tc->uppercase
-
-Count/list of uppercase letters found.
 
 =item $tc->whitespace
 
@@ -456,23 +491,59 @@ Count/list of whitespace -- \s+ -- found.
 Dictionary hook to allow BIG lists of proper names and lc to be
 applied.
 
+Handle internal punctuation like an em-dash as the equivalent of "--"?
+
 Handle hypens; user hooks.
+
+Allow a grammar parser object (on demand, if available) to correctly
+identify a word's part of speech before applying casing. "To" might be
+a proper name, for example, and "A" might be a grade.
 
 Debug ability. Log object or to carp?
 
 Smart apostrophe, utf8, entities?
 
-Recipes. Including TT2 "plugin" recipe.
+Allow the setting of inner-punctuation instead of the default [:punct:]?
+
+Recipes. Including TT2 "plugin" recipe. Mini-scripts to test strings
+or accomplish custom configuration goals.
+
 
 Take out Class::Accessor...? For having it all in one place, checking
 args, and slight speed gain.
+
+Add ignore classes? Like \bhttp://...
 
 Bigger test suite.
 
 
 =head1 RECIPES
 
-Mini-scripts to test strings or accomplish custom configuration goals.
+=head3 Passing L::E::T object to TT2
+
+ use Template;
+ use CGI "header";
+ use Lingua::EN::Titlecase;
+ my @titles = (
+               "orphans of the sky",
+               "childhood's end",
+               "the many-colored land",
+               "llana of gathol",
+               );
+ 
+ print header(-content_type => "text/plain");
+ my $tt2 = Template->new();
+ 
+ $tt2->process(\*DATA,
+               { tc => Lingua::EN::Titlecase->new(),
+                 title => \@titles }
+               );
+ __DATA__
+ [%-USE format %]
+ [%-pretty_print = format('%30s : %s') %]
+ [%-FOR t IN title %]
+ [% pretty_print( t, tc.title(t) ) %]
+ [%-END %]
 
 =head1 CONFIGURATION AND ENVIRONMENT
 
