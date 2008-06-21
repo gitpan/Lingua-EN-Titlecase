@@ -3,7 +3,9 @@ package Lingua::EN::Titlecase;
 use strict;
 use warnings;
 require 5.006; # for POSIX classes
-use base "Class::Accessor::Fast";
+
+use parent "Class::Accessor::Fast";
+
 __PACKAGE__->mk_accessors qw( 
                               uc_threshold
                               mixed_threshold
@@ -40,7 +42,7 @@ use overload '""' => sub { $_[0]->original ? $_[0]->titlecase : ref $_[0] },
 
 use List::Util qw(first);
 use Carp;
-our $VERSION = "0.06";
+our $VERSION = "0.07";
 
 our %LC = map { $_ => 1 }
     qw( the a an and or but aboard about above across after against
@@ -77,13 +79,12 @@ sub new : method {
             $self->$key($args{$key});
         }
     }
-    $self->_init();
-    $self;
+    return $self->_init();
 }
 
 sub _init : method {
     my ( $self ) = @_;
-    $self->{_titlecase} = '';
+    $self->{_titlecase} = "";
     $self->{_real_length} = 0;
     $self->{_mixedcase} = [];
     $self->{_wc} = [];
@@ -121,7 +122,7 @@ sub _init : method {
                       return ();
                   }
                   );
-    $self;
+    return $self;
 }
 
 sub mixedcase : method {
@@ -253,7 +254,6 @@ sub titlecase : method {
     return $self->{_titlecase};
 }
 
-
 1;
 
 __END__
@@ -267,22 +267,13 @@ Leave alone non-dictionary words? Like code bits: [\w]?
 4. Big list of cases
 5. Add a callback to specifically address something, pre or post
 
-1-
-    my $title = CGI::param("title");
-
-4-
-test cases
-
-
-=pod
-
 =head1 NAME
 
 Lingua::EN::Titlecase - Titlecasing of English words by traditional editorial rules.
 
 =head1 VERSION
 
-0.06
+0.07
 
 =head1 CAVEAT
 
@@ -315,8 +306,6 @@ be correct already. Most titlecase implementations, for example,
 convert everything to lowercase first. This is obviously flawed for
 many common cases like proper names and abbreviations.
 
-# allow for style/usage plugins...?
-
 Simple techniques like--
 
  $data =~ s/(\w+)/\u\L$1/g;
@@ -343,18 +332,16 @@ provide hooks to address the special.
 
 =over 4
 
-=item Lingua::EN::Titlecase->new()
-
-=item $tc->new
+=item $tc = Lingua::EN::Titlecase->new
 
 The string to be titlecased can be set three ways. Single argument to
 new. The "original" hash element to C<new>. With the C<title>
 method.
 
- $tc->new("this is what should be titlecased");
+ $tc = Lingua::EN::Titlecase->new("this should be titlecased");
 
- $tc->new(original => "no, this is",
-          mixed_threshold => 0.5);
+ $tc = Lingua::EN::Titlecase->new(original => "no, this is",
+                                  mixed_threshold => 0.5);
 
  $tc->title("i beg to differ");
 
@@ -372,7 +359,7 @@ Returns the original string.
 Set the original string, returns the titlecased version. Both can be
 done at once.
 
- print $tc->title("did you get that thing i sent?")
+ print $tc->title("did you get that thing i sent?"), "\n";
 
 =item $tc->titlecase
 
@@ -404,7 +391,7 @@ Set on construction or reset it to change the behavior--
  Lingua::EN::Titlecase->new(word_punctuation => "['-]");
 
  $tc->word_punctuation(qr/['-]/)
- # "can't" and "cow-cather" are still one word
+ # "can't" and "cow-catcher" are still one word
  # "cpan.org" is now two and the "Org" will get titlecased
 
 =back
@@ -495,6 +482,12 @@ Handle internal punctuation like an em-dash as the equivalent of "--"?
 
 Handle hypens; user hooks.
 
+Handle classes of things to be left alone if of a case. Like Roman
+numerals? Better to have it be rule based where each rule is used to
+find a thing, apply a threshold map, possibly convert lc/uc, and then
+titlecase or accept. This could get much messier than a dictionary and
+might cause problems with overlap like i v I.
+
 Allow a grammar parser object (on demand, if available) to correctly
 identify a word's part of speech before applying casing. "To" might be
 a proper name, for example, and "A" might be a grade.
@@ -508,14 +501,12 @@ Allow the setting of inner-punctuation instead of the default [:punct:]?
 Recipes. Including TT2 "plugin" recipe. Mini-scripts to test strings
 or accomplish custom configuration goals.
 
-
 Take out Class::Accessor...? For having it all in one place, checking
 args, and slight speed gain.
 
 Add ignore classes? Like \bhttp://...
 
 Bigger test suite.
-
 
 =head1 RECIPES
 
@@ -559,42 +550,42 @@ None reported.
 
 =head1 BUGS AND LIMITATIONS
 
-This is beta-ish software. No bugs have been reported.
+No bugs have been reported.
 
-Please report any bugs or feature requests to
-C<bug-lingua-en-titlecase@rt.cpan.org>, or through the web interface at
-L<http://rt.cpan.org>.
+Please report any bugs or feature requests to C<bug-lingua-en-titlecase@rt.cpan.org>, or through the web interface at L<http://rt.cpan.org>.
 
 =head1 AUTHOR
 
-Ashley Pond V  C<< <ashley@cpan.org> >>
+Ashley Pond V  C<< <ashley@cpan.org> >>.
 
-=head1 LICENCE AND COPYRIGHT
+=head1 LICENSE AND COPYRIGHT
 
-Copyright (c) 2007, Ashley Pond V C<< <ashley@cpan.org> >>. All rights reserved.
+Copyright (c) 2008, Ashley Pond V C<< <ashley@cpan.org> >>.
 
-This module is free software; you can redistribute it and/or
-modify it under the same terms as Perl itself. See L<perlartistic>.
+This module is free software; you can redistribute it and modify it
+under the same terms as Perl itself. See L<perlartistic>.
 
 =head1 DISCLAIMER OF WARRANTY
 
-BECAUSE THIS SOFTWARE IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
-FOR THE SOFTWARE, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN
-OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
-PROVIDE THE SOFTWARE "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER
-EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE
-ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE SOFTWARE IS WITH
-YOU. SHOULD THE SOFTWARE PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL
-NECESSARY SERVICING, REPAIR, OR CORRECTION.
+Because this software is licensed free of charge, there is no warranty
+for the software, to the extent permitted by applicable law. Except when
+otherwise stated in writing the copyright holders and other parties
+provide the software "as is" without warranty of any kind, either
+expressed or implied, including, but not limited to, the implied
+warranties of merchantability and fitness for a particular purpose. The
+entire risk as to the quality and performance of the software is with
+you. Should the software prove defective, you assume the cost of all
+necessary servicing, repair, or correction.
 
-IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
-WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR
-REDISTRIBUTE THE SOFTWARE AS PERMITTED BY THE ABOVE LICENCE, BE
-LIABLE TO YOU FOR DAMAGES, INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL,
-OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OR INABILITY TO USE
-THE SOFTWARE (INCLUDING BUT NOT LIMITED TO LOSS OF DATA OR DATA BEING
-RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD PARTIES OR A
-FAILURE OF THE SOFTWARE TO OPERATE WITH ANY OTHER SOFTWARE), EVEN IF
-SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
-SUCH DAMAGES.
+In no event unless required by applicable law or agreed to in writing
+will any copyright holder, or any other party who may modify or
+redistribute the software as permitted by the above license, be
+liable to you for damages, including any general, special, incidental,
+or consequential damages arising out of the use or inability to use
+the software (including but not limited to loss of data or data being
+rendered inaccurate or losses sustained by you or third parties or a
+failure of the software to operate with any other software), even if
+such holder or other party has been advised of the possibility of
+such damages.
+
+=cut

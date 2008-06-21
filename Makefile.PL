@@ -1,19 +1,18 @@
-use strict;
-use warnings;
-use ExtUtils::MakeMaker;
+use inc::Module::Install;
 
-WriteMakefile(
-    NAME                => 'Lingua::EN::Titlecase',
-    AUTHOR              => 'Ashley Pond V <ashley@cpan.org>',
-    VERSION_FROM        => 'lib/Lingua/EN/Titlecase.pm',
-    ABSTRACT_FROM       => 'lib/Lingua/EN/Titlecase.pm',
-    PL_FILES            => {},
-    PREREQ_PM => {
-        "Class::Accessor::Fast" => 0,
-        "Test::More" => 0,
-        "Carp"       => 0,
-        "List::Util" => 0,
-    },
-    dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
-    clean               => { FILES => 'Lingua-EN-Titlecase-*' },
-);
+name            "Lingua-EN-Titlecase";
+all_from        "lib/Lingua/EN/Titlecase.pm";
+
+perl_version '5.006'; # for POSIX classes
+
+requires  "parent"                => "0.2";
+requires  "Class::Accessor::Fast" => 0;
+requires  "Carp"                  => 0;
+requires  "List::Util"            => 0;
+
+build_requires  "Test::More" => 0;
+
+auto_install;
+WriteAll;
+
+__END__
