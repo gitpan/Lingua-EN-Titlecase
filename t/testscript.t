@@ -1,23 +1,52 @@
 #!perl
 
 use strict;
-use warnings; no warnings "uninitialized";
+use warnings;
 
 use FindBin;
 use lib "$FindBin::Bin/lib";
 
-use Test::More "no_plan";
-# use Test::More tests => 5;
+# use Test::More "no_plan";
+use Test::More tests => 152;
 
 my $class = "Lingua::EN::Titlecase";
 
 use_ok($class);
 
-# one plain one first, and then reuse object
-ok( my $tc = Lingua::EN::Titlecase->new(),
-    "$class->new()");
+{
+    ok( my $tc = Lingua::EN::Titlecase->new(),
+        "$class->new()");
 
-# isa_ok($tc, $class);
+    isa_ok($tc, $class);
+}
+
+# Check the SYNOPSIS code to ensure it's working as advertised.
+{
+    ok( my $tc = Lingua::EN::Titlecase->new("CAN YOU FIX A TITLE?"),
+        "Calling new with a string" );
+
+    is("$tc",
+       "Can You Fix a Title?",
+       "Stringification works from new(string)" );
+
+# use YAML; diag( Dump $tc ); diag( $tc );
+
+    is($tc->title(),
+       "Can You Fix a Title?",
+       "title() from new");
+
+    is($tc->title("and again but differently"),
+       "And Again but Differently",
+       "Inline title([string]) with same object");
+
+    ok($tc->title("cookbook don't work, do she?"),
+       "New string set via title() on same object");
+
+    is("$tc",
+       "Cookbook Don't Work, Do She?",
+       "Stringification works" );
+}
+
 
 my @test_strings;
 {
@@ -36,27 +65,49 @@ my @test_strings;
     }
 }
 
-for my $testcase ( @test_strings )
 {
-    ok( $tc->title($testcase->{original}),
-        "Setting original/title string: $testcase->{original}");
+    my $tc = Lingua::EN::Titlecase->new;
 
-    is( $tc->original(), $testcase->{original},
-        "Original string returns correctly");
+    for my $testcase ( @test_strings )
+    {
+        ok( $tc->title($testcase->{original}),
+            "Setting original/title string: $testcase->{original}");
 
-    is( $tc->title(), $testcase->{title},
-        "Title(cased)");
+        is( $tc->original(), $testcase->{original},
+            "Original string returns correctly");
 
-    is( join(" ", $tc->mixedcase), $testcase->{mixedcase},
-        "Mixedcase counted: $testcase->{title}");
+        is( $tc->title(), $testcase->{title},
+            "Title(cased)");
 
-    is( scalar($tc->wc), $testcase->{wc},
-        "Wordish (wc) counted: $testcase->{title}");
+        is( join(" ", $tc->mixedcase), $testcase->{mixedcase},
+            "Mixedcase counted: $testcase->{title}");
 
-    is( $tc->titlecase, "$tc",
-        "Object is quote overloaded");
+        is( scalar($tc->wc), $testcase->{wc},
+            "Wordish (wc) counted: $testcase->{title}");
 
-#use Data::Dumper; diag(Dumper $tc);
+        is( $tc->titlecase, "$tc",
+            "Object is quote overloaded");
+    }
+
+    # Now repeat tests using new() as raw string setter.
+    for my $testcase ( @test_strings ) {
+        my $tc = Lingua::EN::Titlecase->new($testcase->{original});
+
+        is( $tc->original(), $testcase->{original},
+            "Original string returns correctly");
+
+        is( $tc->title(), $testcase->{title},
+            "Title(cased)");
+
+        is( join(" ", $tc->mixedcase), $testcase->{mixedcase},
+            "Mixedcase counted: $testcase->{title}");
+
+        is( scalar($tc->wc), $testcase->{wc},
+            "Wordish (wc) counted: $testcase->{title}");
+
+        is( $tc->titlecase, "$tc",
+            "Object is quote overloaded");
+    }
 }
 
 1;

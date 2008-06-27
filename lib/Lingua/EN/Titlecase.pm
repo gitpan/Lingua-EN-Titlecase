@@ -16,7 +16,7 @@ __PACKAGE__->mk_accessors qw(
                               _lexer
                               );
 
-use overload '""' => sub { $_[0]->original ? $_[0]->titlecase : ref $_[0] },
+use overload '""' => sub { $_[0]->original ? $_[0]->title : ref $_[0] },
     fallback => 1;
 
 # DEVELOPER NOTES
@@ -42,7 +42,7 @@ use overload '""' => sub { $_[0]->original ? $_[0]->titlecase : ref $_[0] },
 
 use List::Util qw(first);
 use Carp;
-our $VERSION = "0.07";
+our $VERSION = "0.08";
 
 our %LC = map { $_ => 1 }
     qw( the a an and or but aboard about above across after against
@@ -67,7 +67,7 @@ sub new : method {
 
     if ( @_ == 1 )
     {
-        $self->original($_[0]);
+        $self->{_original} = $_[0];
     }
     else
     {
@@ -161,10 +161,11 @@ sub title : method {
     if ( $newstring )
     {
         $self->{_original} = $newstring;
-        $self->_init();
-        $self->_parse();
     }
-    return $self->titlecase() if defined wantarray;
+
+    $self->_init();
+    $self->_parse();
+    return $self->titlecase();
 }
 
 sub original : method {
@@ -269,17 +270,15 @@ Leave alone non-dictionary words? Like code bits: [\w]?
 
 =head1 NAME
 
-Lingua::EN::Titlecase - Titlecasing of English words by traditional editorial rules.
+Lingua::EN::Titlecase - Titlecase English words by traditional editorial rules.
 
 =head1 VERSION
 
-0.07
+0.08
 
 =head1 CAVEAT
 
-Beta-ish software. I'm very interested in feedback! All interfaces,
-method names, and internal code subject to change or being roundfiled
-in the BackPan.
+Beta-ish software. I'm very interested in feedback! Interface is probably stable now.
 
 =head1 SYNOPSIS
 
