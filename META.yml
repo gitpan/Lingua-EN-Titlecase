@@ -1,14 +1,24 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Lingua-EN-Titlecase
-version:      0.06
-version_from: lib/Lingua/EN/Titlecase.pm
-installdirs:  site
-requires:
-    Carp:                          0
-    Class::Accessor::Fast:         0
-    List::Util:                    0
-    Test::More:                    0
-
+--- 
+abstract: Titlecase English words by traditional editorial rules.
+author: 
+  - Ashley Pond V  C<< <ashley@cpan.org> >>.
+build_requires: 
+  Test::More: 0
 distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.17
+generated_by: Module::Install version 0.70
+license: perl
+meta-spec: 
+  url: http://module-build.sourceforge.net/META-spec-v1.3.html
+  version: 1.3
+name: Lingua-EN-Titlecase
+no_index: 
+  directory: 
+    - inc
+    - t
+requires: 
+  Carp: 0
+  Class::Accessor::Fast: 0
+  List::Util: 0
+  parent: 0.2
+  perl: 5.6.0
+version: 0.09

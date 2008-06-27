@@ -1,5 +1,9 @@
 Revision history for Lingua-EN-Titlecase
 
+0.09 Fri Jun 27 16:02:26 PDT 2008
+    - Didn't notice the META.yml wasn't getting cleared in builds, so
+      rebuilding just to update it from last December.
+
 0.08 Fri Jun 27 14:43:01 PDT 2008
     - Greg Lindahl pointed out that the setter of the string in a new
       call wasn't working. Fixed.

@@ -42,7 +42,7 @@ use overload '""' => sub { $_[0]->original ? $_[0]->title : ref $_[0] },
 
 use List::Util qw(first);
 use Carp;
-our $VERSION = "0.08";
+our $VERSION = "0.09";
 
 our %LC = map { $_ => 1 }
     qw( the a an and or but aboard about above across after against
@@ -274,7 +274,7 @@ Lingua::EN::Titlecase - Titlecase English words by traditional editorial rules.
 
 =head1 VERSION
 
-0.08
+0.09
 
 =head1 CAVEAT
 
