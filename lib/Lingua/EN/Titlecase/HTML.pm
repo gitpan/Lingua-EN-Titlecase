@@ -1,29 +1,45 @@
 package Lingua::EN::Titlecase::HTML;
 use strict;
 use warnings;
-
 use parent "Lingua::EN::Titlecase";
+use HTML::TokeParser;
 
 sub lexer : method {
-    my ( $self ) = @_;
-    $self->{_lexer} = shift if $@;
+    my $self = shift;
     return $self->{_lexer} if $self->{_lexer};
 
     my $wp = $self->word_punctuation;
     my $wordish = $self->wordish_rx;
 
     $self->{_lexer} = sub {
-        $_[0] =~ s/\A(<[^>]+>)// and return [ undef, "$1" ];
-        $_[0] =~ s/\A($wordish)// and return [ "word", "$1" ];
-        $_[0] =~ s/\A(.)//s and return [ undef, "$1" ];
-        return ();
+        unless ( $self->{_raw_html} ) {
+            my $tmp = $self->{_raw_html} = shift;
+            $self->{_parser} = HTML::TokeParser->new(\$tmp);
+        }
+
+        if ( defined $self->{__text} and length $self->{__text} )
+        {
+            $self->{__text} =~ s/\A($wordish)// and return [ "word", "$1" ];
+            $self->{__text} =~ s/\A(.)//s and return [ undef, "$1" ];
+        }
+        elsif ( my $token = $self->{_parser}->get_token() )
+        {
+            return [ undef, $token->[-1] ] unless $token->[0] eq "T";
+            $self->{__text} = $token->[1];
+            return $self->{_lexer}->();
+        }
+        else
+        {
+            $self->{_raw_html} = undef; # reset for next possible pass
+            $self->{_parser} = undef;
+            return ();
+        }
     };
 }
 
 1;
 
 __END__
-
 
 =head1 NAME
 
@@ -32,16 +48,18 @@ Lingua::EN::Titlecase::HTML - Titlecase English words which contain HTML markup 
 =head1 DESCRIPTION
 
 This is a subclass of L<Lingua::EN::Titlecase> which can handle
-B<simple> embedded HTML-like markup. The following will work fine-
+embedded HTML-like markup. The following will work fine-
 
  the <b>way</b> we <i>were</i>
+ # Becomes...
+ The <b>Way</b> We <i>Were</i>
 
-This, will B<not>-
+Since L<HTML::TokeParser> is used to filter through the tags, even this
+sort of thing will work-
 
- <a name="<what a stupid attr>">no title for you</a>
-
-This may be fixed to be more robust down the road. It should cover a
-good several nines of HTML in the wild as is though.
+ <a name="<what a stupid attr>">no title for you</a>.
+ # Becomes...
+ <a name="<what a stupid attr>">No Title for You</a>.
 
 See L<Lingua::EN::Titlecase> for full usage.
 

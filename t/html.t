@@ -7,8 +7,8 @@ use FindBin;
 use lib "$FindBin::Bin/lib";
 use Lingua::EN::Titlecase::HTML;
 
-use Test::More "no_plan";
-#use Test::More tests => 152;
+# use Test::More "no_plan";
+use Test::More tests => 77;
 
 
 my @test_strings;
@@ -92,8 +92,8 @@ Library of <b>Perl</b> in between Tools
 5
 ""
 
-<no such tag />And this with that but the capitalizing cat
-<no such tag />And This with That but the Capitalizing Cat
+<no such tag="><<\\><>\<\>>\\\\><>>><>><></>\\>\>" />And this with that but the capitalizing cat
+<no such tag="><<\\><>\<\>>\\\\><>>><>><></>\\>\>" />And This with That but the Capitalizing Cat
 8
 ""
 
@@ -102,8 +102,8 @@ Library of <b>Perl</b> in between Tools
 10
 ""
 
-U.S.</tag> <tag>Vs.</tag> <tag>C.C.C.P.
-U.S.</tag> <tag>vs.</tag> <tag>C.C.C.P.
+U.S. <tag alt="<">Vs.</tag> <tag>C.C.C.P.</tag>
+U.S. <tag alt="<">vs.</tag> <tag>C.C.C.P.</tag>
 3
 ""
 
@@ -112,7 +112,7 @@ U.S.</tag> <tag>vs.</tag> <tag>C.C.C.P.
 5
 ""
 
-<tag>triple-threat-hypen</tag> <tag>and</tag> <tag>int'l'z'n</tag>
-<tag>Triple-threat-hypen</tag> <tag>and</tag> <tag>Int'l'z'n</tag>
-3
+ <a name="<what a stupid attr>">no title for you</a>, <tag>triple-threat-hypen</tag> <tag>and</tag> <tag>int'l'z'n</tag>
+ <a name="<what a stupid attr>">No Title for You</a>, <tag>Triple-threat-hypen</tag> <tag>and</tag> <tag>Int'l'z'n</tag>
+7
 ""

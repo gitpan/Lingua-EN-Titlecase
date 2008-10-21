@@ -41,7 +41,7 @@ use overload '""' => sub { $_[0]->original ? $_[0]->title : ref $_[0] },
 
 use List::Util qw(first);
 use Carp;
-our $VERSION = "0.10";
+our $VERSION = "0.11";
 
 our %LC = map { $_ => 1 }
     qw( the a an and or but aboard about above across after against
@@ -180,8 +180,8 @@ sub _parse : method {
         push @{$self->{_wc}}, $token->[1] if $token->[0];
         $self->{_real_length} += length($token->[1]) if $token->[0];
     }
-    my $uc_ratio = $self->uppercase / $self->{_real_length};
-    my $mixed_ratio = $self->mixedcase / $self->{_real_length};
+    my $uc_ratio = eval { $self->uppercase / $self->{_real_length} } || 0;
+    my $mixed_ratio = eval { $self->mixedcase / $self->{_real_length} } || 0;
     if ( $uc_ratio > $self->uc_threshold ) # too much uppercase to be real
     {
         $_->[1] = lc($_->[1]) for @{ $self->{_token_queue} };
@@ -273,7 +273,7 @@ Lingua::EN::Titlecase - Titlecase English words by traditional editorial rules.
 
 =head1 VERSION
 
-0.10
+0.11
 
 =head1 CAVEAT
 
@@ -512,6 +512,10 @@ args, and slight speed gain.
 Add ignore classes? Like \bhttp://...
 
 Bigger test suite.
+
+=head1 SEE ALSO
+
+L<Lingua::EN::Titlecase::HTML> for titlecasing text with markup.
 
 =head1 RECIPES
 
