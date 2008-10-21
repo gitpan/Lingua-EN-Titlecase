@@ -6,15 +6,14 @@ require 5.006; # for POSIX classes
 
 use parent "Class::Accessor::Fast";
 
-__PACKAGE__->mk_accessors qw( 
-                              uc_threshold
-                              mixed_threshold
-                              allow_mixed
-                              word_punctuation
-                              _mixed_rx
-                              _word_rx
-                              _lexer
-                              );
+__PACKAGE__->mk_accessors qw(
+                             uc_threshold
+                             mixed_threshold
+                             mixed_rx
+                             wordish_rx
+                             allow_mixed
+                             word_punctuation
+                             );
 
 use overload '""' => sub { $_[0]->original ? $_[0]->title : ref $_[0] },
     fallback => 1;
@@ -42,7 +41,7 @@ use overload '""' => sub { $_[0]->original ? $_[0]->title : ref $_[0] },
 
 use List::Util qw(first);
 use Carp;
-our $VERSION = "0.09";
+our $VERSION = "0.10";
 
 our %LC = map { $_ => 1 }
     qw( the a an and or but aboard about above across after against
@@ -90,38 +89,28 @@ sub _init : method {
     $self->{_wc} = [];
     $self->{_token_queue} = [];
     $self->{_uppercase} = [];
+    $self->word_punctuation(qr/[[:punct:]]/) unless $self->word_punctuation;
+    my $wp = $self->word_punctuation;
+    $self->wordish_rx(qr/
+                   [[:alpha:]]
+                   (?: (?<=[[:alpha:]]) $wp (?=[[:alpha:]]) | [[:alpha:]] )*
+                   [[:alpha:]]*
+                   /x) unless $self->wordish_rx;
+    $self->mixed_rx(
+                    qr/(?<=[[:lower:]])[[:upper:]]
+                    |
+                    (?<=\A)[[:upper:]](?=[[:upper:]]+[[:lower:]])
+                    |
+                    (?<=\A)[[:upper:]](?=[[:lower:]]+[[:upper:]])
+                    |
+                    (?<=[[:lower:]]$wp)[[:upper:]]
+                    |
+                    \G(?<!\A)[[:upper:]]
+                    /x) unless $self->mixed_rx;
+
     $self->allow_mixed(undef);
     $self->mixed_threshold(0.25) unless $self->mixed_threshold;
     $self->uc_threshold(0.90) unless $self->uc_threshold;
-
-    my $wp = $self->word_punctuation || qr/[[:punct:]]/;
-
-    my $mixed =qr/(?<=[[:lower:]])[[:upper:]]
-                    |
-                     (?<=\A)[[:upper:]](?=[[:upper:]]+[[:lower:]])
-                    |
-                     (?<=\A)[[:upper:]](?=[[:lower:]]+[[:upper:]])
-                    |
-                     (?<=[[:lower:]]$wp)[[:upper:]]
-                    |
-                     \G(?<!\A)[[:upper:]]
-             /x;
-
-    my $wordish = qr/
-            [[:alpha:]]
-            (?: (?<=[[:alpha:]]) $wp (?=[[:alpha:]]) | [[:alpha:]] )*
-            [[:alpha:]]*
-                       /x;
-
-    $self->_mixed_rx( $mixed );
-    $self->_word_rx( $wordish );
-    $self->_lexer(
-                  sub {
-                      $_[0] =~ s/\A($wordish)// and return [ "word", "$1" ];
-                      $_[0] =~ s/\A(.)//s and return [ undef, "$1" ];
-                      return ();
-                  }
-                  );
     return $self;
 }
 
@@ -136,12 +125,6 @@ sub uppercase : method {
     $self->_parse unless $self->{_uppercase};
     return @{$self->{_uppercase}};
 }
-
-#sub lowercase : method { # NOT BEING PARSED
-#    my ( $self ) = @_;
-#    $self->_parse unless $self->{_lowercase};
-#    return @{$self->{_lowercase}};
-#}
 
 sub whitespace : method {
     my ( $self ) = @_;
@@ -185,9 +168,10 @@ sub _parse : method {
     # 3 - uc array
     # 4 - first word token in queue -- "boolean" -- set in titlecase()
 
-    my $mixed_rx = $self->_mixed_rx;
+    my $wp = $self->word_punctuation;
+    my $mixed_rx = $self->mixed_rx;
 
-    while ( my $token = $self->_lexer->($string) )
+    while ( my $token = $self->lexer->($string) )
     {
         my @mixed = $token->[1] =~ /$mixed_rx/g;
         $token->[2] = @mixed ? \@mixed : undef;
@@ -215,6 +199,21 @@ sub _parse : method {
         $self->allow_mixed(1);
     }
     1;
+}
+
+sub lexer : method {
+    my ( $self ) = @_;
+    $self->{_lexer} = shift if $@;
+    return $self->{_lexer} if $self->{_lexer};
+
+    my $wp = $self->word_punctuation;
+    my $wordish = $self->wordish_rx;
+
+    $self->{_lexer} = sub {
+        $_[0] =~ s/\A($wordish)// and return [ "word", "$1" ];
+        $_[0] =~ s/\A(.)//s and return [ undef, "$1" ];
+        return ();
+    };
 }
 
 sub titlecase : method {
@@ -274,11 +273,11 @@ Lingua::EN::Titlecase - Titlecase English words by traditional editorial rules.
 
 =head1 VERSION
 
-0.09
+0.10
 
 =head1 CAVEAT
 
-Beta-ish software. I'm very interested in feedback! Interface is probably stable now.
+Beta-ish software though it seems to be doing well in the wild. I'm interested in feedback! Interface is probably stable now.
 
 =head1 SYNOPSIS
 
@@ -393,6 +392,11 @@ Set on construction or reset it to change the behavior--
  # "can't" and "cow-catcher" are still one word
  # "cpan.org" is now two and the "Org" will get titlecased
 
+=item $tc->lexer
+
+Get/set the lexer sub ref. You should probably ignore this. If you
+think otherwise, read the source for more.
+
 =back
 
 =head2 STRATEGIES
@@ -480,6 +484,8 @@ applied.
 Handle internal punctuation like an em-dash as the equivalent of "--"?
 
 Handle hypens; user hooks.
+
+Move to Mouse or Moose?
 
 Handle classes of things to be left alone if of a case. Like Roman
 numerals? Better to have it be rule based where each rule is used to
