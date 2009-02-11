@@ -1,3 +1,4 @@
+.#Changes
 Changes
 inc/Module/AutoInstall.pm
 inc/Module/Install.pm
@@ -21,5 +22,7 @@ t/00.load.t
 t/html.t
 t/pod-coverage.t
 t/pod.t
+t/recursion.t
 t/synopsis.t
+t/test-strings.txt
 t/testscript.t

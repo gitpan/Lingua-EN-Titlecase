@@ -41,7 +41,7 @@ use overload '""' => sub { $_[0]->original ? $_[0]->title : ref $_[0] },
 
 use List::Util qw(first);
 use Carp;
-our $VERSION = "0.11";
+our $VERSION = "0.12";
 
 our %LC = map { $_ => 1 }
     qw( the a an and or but aboard about above across after against
@@ -82,7 +82,7 @@ sub new : method {
 }
 
 sub _init : method {
-    my ( $self ) = @_;
+    my $self = shift;
     $self->{_titlecase} = "";
     $self->{_real_length} = 0;
     $self->{_mixedcase} = [];
@@ -115,49 +115,49 @@ sub _init : method {
 }
 
 sub mixedcase : method {
-    my ( $self ) = @_;
+    my $self = shift;
     $self->_parse unless $self->{_mixedcase};
     return @{$self->{_mixedcase}};
 }
 
 sub uppercase : method {
-    my ( $self ) = @_;
+    my $self = shift;
     $self->_parse unless $self->{_uppercase};
     return @{$self->{_uppercase}};
 }
 
 sub whitespace : method {
-    my ( $self ) = @_;
+    my $self = shift;
     $self->_parse unless $self->{_whitespace};
     return @{$self->{_whitespace}};
 }
 
 sub wc : method {
-    my ( $self ) = @_;
+    my $self = shift;
     $self->_parse unless $self->{_wc};
     return @{$self->{_wc}};
 }
 
 sub title : method {
-    my ( $self, $newstring ) = @_;
-
-    if ( $newstring )
-    {
-        $self->{_original} = $newstring;
-    }
-
-    $self->_init();
+    my $self = shift;
+    $self->original(+shift) if @_;
     $self->_parse();
     return $self->titlecase();
 }
 
 sub original : method {
-    my ( $self ) = @_;
+    my $self = shift;
+    if ( my $new = shift )
+    {
+        $self->{_parsed} = 0 if $self->{_original} ne $new;
+        $self->{_original} = $new;
+    }
     return $self->{_original};
 }
 
 sub _parse : method {
-    my ( $self ) = @_;
+    my $self = shift;
+    return if $self->{_parsed};
     $self->_init();
     my $string = $self->original();
     $self->{_uppercase} = [ $string =~ /[[:upper:]]/g ];
@@ -198,11 +198,11 @@ sub _parse : method {
     {
         $self->allow_mixed(1);
     }
-    1;
+    $self->{_parsed} = 1;
 }
 
 sub lexer : method {
-    my ( $self ) = @_;
+    my $self = shift;
     $self->{_lexer} = shift if $@;
     return $self->{_lexer} if $self->{_lexer};
 
@@ -217,7 +217,7 @@ sub lexer : method {
 }
 
 sub titlecase : method {
-    my ( $self ) = @_;
+    my $self = shift;
     # it's up to _parse to clear it
     return $self->{_titlecase} if $self->{_titlecase};
 
@@ -273,7 +273,7 @@ Lingua::EN::Titlecase - Titlecase English words by traditional editorial rules.
 
 =head1 VERSION
 
-0.11
+0.12
 
 =head1 CAVEAT
 
@@ -472,7 +472,7 @@ Count/list of whitespace -- \s+ -- found.
 
 =item No diagnostics for you!
 
-[Non-existent Description of error here]
+[Non-existent description of error here]
 
 =back
 
@@ -569,7 +569,7 @@ Ashley Pond V  C<< <ashley@cpan.org> >>.
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (c) 2008, Ashley Pond V C<< <ashley@cpan.org> >>.
+Copyright (c) 2008-2009, Ashley Pond V C<< <ashley@cpan.org> >>.
 
 This module is free software; you can redistribute it and modify it
 under the same terms as Perl itself. See L<perlartistic>.

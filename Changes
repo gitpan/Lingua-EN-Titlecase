@@ -1,5 +1,8 @@
 Revision history for Lingua-EN-Titlecase
 
+0.12 Tue Feb 10 19:23:45 PST 2009
+     - RT bug #42545.
+
 0.11 Mon Oct 20 20:36:10 PDT 2008
      - Made the ::HTML lexer wrap up an HTML::TokeParser for
        robustiality (that's right, robustiality).
