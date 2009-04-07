@@ -65,9 +65,9 @@ See L<Lingua::EN::Titlecase> for full usage.
 
 =over 4
 
-=item lexer
+=item B<lexer>
 
-Overrides the parent method to add in a pseudo-SGML tag ignoring step
+Overrides the parent method to add in an HTML/SGML tag ignoring step
 in the lexer.
 
 =back

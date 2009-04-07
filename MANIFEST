@@ -1,4 +1,3 @@
-.#Changes
 Changes
 inc/Module/AutoInstall.pm
 inc/Module/Install.pm
@@ -12,6 +11,9 @@ inc/Module/Install/Metadata.pm
 inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
 lib/Lingua/EN/Titlecase.pm
+lib/Lingua/EN/Titlecase.pm.mine
+lib/Lingua/EN/Titlecase.pm.r197
+lib/Lingua/EN/Titlecase.pm.r249
 lib/Lingua/EN/Titlecase/HTML.pm
 Makefile.PL
 MANIFEST			This list of files

@@ -1,7 +1,7 @@
 package Lingua::EN::Titlecase;
-
 use strict;
 use warnings;
+no warnings "uninitialized";
 require 5.006; # for POSIX classes
 
 use parent "Class::Accessor::Fast";
@@ -41,7 +41,7 @@ use overload '""' => sub { $_[0]->original ? $_[0]->title : ref $_[0] },
 
 use List::Util qw(first);
 use Carp;
-our $VERSION = "0.12";
+our $VERSION = "0.13";
 
 our %LC = map { $_ => 1 }
     qw( the a an and or but aboard about above across after against
@@ -263,9 +263,8 @@ Leave alone non-dictionary words? Like code bits: [\w]?
 
 1. Process comment titles from a blog?
 2. Normalize titles in a news feed.
-3. XHTML broken-up text -- Go _____ Your<i>self</i>
-4. Big list of cases
-5. Add a callback to specifically address something, pre or post
+3. Big list of cases
+4. Add a callback to specifically address something, pre or post
 
 =head1 NAME
 
@@ -273,11 +272,7 @@ Lingua::EN::Titlecase - Titlecase English words by traditional editorial rules.
 
 =head1 VERSION
 
-0.12
-
-=head1 CAVEAT
-
-Beta-ish software though it seems to be doing well in the wild. I'm interested in feedback! Interface is probably stable now.
+0.13
 
 =head1 SYNOPSIS
 
@@ -499,10 +494,6 @@ a proper name, for example, and "A" might be a grade.
 
 Debug ability. Log object or to carp?
 
-Smart apostrophe, utf8, entities?
-
-Allow the setting of inner-punctuation instead of the default [:punct:]?
-
 Recipes. Including TT2 "plugin" recipe. Mini-scripts to test strings
 or accomplish custom configuration goals.
 
@@ -553,13 +544,7 @@ Lingua::EN::Titlecase requires no configuration files or environment variables.
 
 Perl 5.6 or better to support POSIX regex classes.
 
-=head1 INCOMPATIBILITIES
-
-None reported.
-
 =head1 BUGS AND LIMITATIONS
-
-No bugs have been reported.
 
 Please report any bugs or feature requests to C<bug-lingua-en-titlecase@rt.cpan.org>, or through the web interface at L<http://rt.cpan.org>.
 

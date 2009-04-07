@@ -13,6 +13,8 @@ requires  "HTML::TokeParser"      => 2;
 
 build_requires  "Test::More" => 0;
 
+system("pod2text lib/Lingua/EN/Titlecase.pm > README");
+
 auto_install;
 WriteAll;
 

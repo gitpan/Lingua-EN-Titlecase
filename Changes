@@ -1,7 +1,10 @@
 Revision history for Lingua-EN-Titlecase
 
+0.13 Mon Apr  6 19:00:48 PDT 2009
+     - RT #44825; with 'no warnings "uninitialized."' Thanks, Chris Canipe.
+
 0.12 Tue Feb 10 19:23:45 PST 2009
-     - RT bug #42545.
+     - RT bug #42545 from my arch-enemy B10m.
 
 0.11 Mon Oct 20 20:36:10 PDT 2008
      - Made the ::HTML lexer wrap up an HTML::TokeParser for
