@@ -1,5 +1,9 @@
 Revision history for Lingua-EN-Titlecase
 
+0.14 Tue Apr  7 19:35:18 PDT 2009
+     - Lucky 0.13 had some non-existent svn conflicted files listed in
+       the MANIFEST. No code changes.
+
 0.13 Mon Apr  6 19:00:48 PDT 2009
      - RT #44825; with 'no warnings "uninitialized."' Thanks, Chris Canipe.
 
