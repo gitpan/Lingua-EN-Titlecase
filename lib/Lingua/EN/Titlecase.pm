@@ -6,14 +6,14 @@ require 5.006; # for POSIX classes
 
 use parent "Class::Accessor::Fast";
 
-__PACKAGE__->mk_accessors qw(
+__PACKAGE__->mk_accessors (qw{
                              uc_threshold
                              mixed_threshold
                              mixed_rx
                              wordish_rx
                              allow_mixed
                              word_punctuation
-                             );
+                             });
 
 use overload '""' => sub { $_[0]->original ? $_[0]->title : ref $_[0] },
     fallback => 1;
@@ -39,9 +39,9 @@ use overload '""' => sub { $_[0]->original ? $_[0]->title : ref $_[0] },
 # There are quite a few apostrophe edge cases right now and no
 # utf8/entity handling
 
-use List::Util qw(first);
+use List::Util "first";
 use Carp;
-our $VERSION = "0.14";
+our $VERSION = "0.15";
 
 our %LC = map { $_ => 1 }
     qw( the a an and or but aboard about above across after against
